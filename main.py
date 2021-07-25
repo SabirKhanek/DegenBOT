@@ -71,7 +71,7 @@ for i in main_admin_list:
 
 reps = {}
 
-BOT_KEY = "1936324922:AAF9BMYbJPx9B3Mf-uZJMS2cq8TGrk_mUNk"
+BOT_KEY = "1936324922:AAEH0txLddXCBrsxMfOpxR0X_5hLf1VVekE"
 
 bot = telebot.TeleBot(BOT_KEY)
 
@@ -449,6 +449,7 @@ def showreps(message):
     except:
         bot.reply_to(message, "@" + user + " has 0 rep! Always DYOR before investing!!!")
 
+
 @bot.message_handler(commands='resetleaderboard')
 def resetleaderboard(message):
     if message.from_user.username in main_admin_list:
@@ -460,7 +461,6 @@ def resetleaderboard(message):
             bot.reply_to(message, "This command cannot be executed in my PM :)")
     else:
         bot.reply_to(message, "You are not allowed to execute this command")
-
 
 
 bot.polling()
