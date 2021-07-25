@@ -111,6 +111,7 @@ def help(message):
                      "/showreps - This command will display reps score of a user, but, Always DYOR!\n"
                      "/wennextvote - This command will display time remaining to /rep a user one more time\n"
                      "/vote_type_switch - This command will Enable or Disable vote_mode\n"
+                     "/resetleaderboard - This command will reset the leaderboard\n"
                      "Enabled: A voter can vote individually a user once in a day\n"
                      "Disabled: Only one voter from the voter list can vote a user within a day\n"
                      "USE THIS COMMAND CAREFULLY")
@@ -150,6 +151,9 @@ def greet(message):
 
 @bot.message_handler(commands=['announce'])
 def announce(message):
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+        return
     if message.from_user.username in disallowed_user_list:
         bot.reply_to(message, "I am sorry your announcements cannot be forwarded in announcement channel.")
     else:
@@ -231,6 +235,9 @@ def showbanned(message):
 @bot.message_handler(commands=['addadmin'])
 def addadmin(message):
     if message.from_user.username in main_admin_list:
+        if message.chat.type == 'private':
+            bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+            return
         try:
             user = message.text.split()[1]
             user = user[1:]
@@ -252,6 +259,9 @@ def addadmin(message):
 @bot.message_handler(commands=['removeadmin'])
 def removeadmin(message):
     if message.from_user.username in main_admin_list:
+        if message.chat.type == 'private':
+            bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+            return
         try:
             user = message.text.split()[1]
             user = user[1:]
@@ -282,6 +292,9 @@ def showadmin(message):
 
 @bot.message_handler(commands=['addvoter'])
 def addvoter(message):
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+        return
     if message.from_user.username in main_admin_list:
         try:
             user = message.text.split()[1]
@@ -295,7 +308,7 @@ def addvoter(message):
             return
 
         voter_list[user] = Voter(user)
-        bot.reply_to(message, ("@" + user + " has been added to the list."))
+        bot.reply_to(message, ("@" + user + " has been added to the list. Now they can /rep anybody..."))
 
     else:
         bot.reply_to(message, "You are not allowed to execute this command!")
@@ -303,6 +316,9 @@ def addvoter(message):
 
 @bot.message_handler(commands=['removevoter'])
 def removevoter(message):
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+        return
     if message.from_user.username in main_admin_list:
         try:
             user = message.text.split()[1]
@@ -337,6 +353,9 @@ def showvoters(message):
 @bot.message_handler(commands=['rep'])
 def rep(message):
     if message.from_user.username in voter_list:
+        if message.chat.type == 'private':
+            bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+            return
         try:
             user = message.text.split()[1]
             user = user[1:]
@@ -359,10 +378,14 @@ def rep(message):
 
 @bot.message_handler(commands=['showleaderboard'])
 def showleaderboard(message):
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+        return
     sort_orders = sorted(reps.items(), key=lambda x: x[1], reverse=True)
     mess_string = "Leadeboards:\n"
     if len(sort_orders) <= 0:
         bot.reply_to(message, "There is no /rep at the moment")
+        return
     n = 1
     for i in sort_orders:
         if n > 5:
@@ -401,6 +424,9 @@ def wennextvote(message):
 
 @bot.message_handler(commands=['vote_type_switch'])
 def vote_type_switch(message):
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+        return
     if message.from_user.username in main_admin_list:
         individual_vote_flag.invertBool()
         bot.reply_to(message, "Command executed, Current Status: " + individual_vote_flag.returnStatus())
@@ -408,6 +434,9 @@ def vote_type_switch(message):
 
 @bot.message_handler(commands=['showreps'])
 def showreps(message):
+    if message.chat.type == 'private':
+        bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
+        return
     try:
         user = message.text.split()[1]
         user = user[1:]
@@ -415,7 +444,23 @@ def showreps(message):
         bot.reply_to(message, "You have to mention the user after the command like /showreps @anyuser")
         return
 
-    bot.reply_to(message, "@" + user + " has " + str(reps.get(user) + " reps! Always DYOR before investing!!!"))
+    try:
+        bot.reply_to(message, "@" + user + " has " + str(reps.get(user) + " reps! Always DYOR before investing!!!"))
+    except:
+        bot.reply_to(message, "@" + user + " has 0 rep! Always DYOR before investing!!!")
+
+@bot.message_handler(commands='resetleaderboard')
+def resetleaderboard(message):
+    if message.from_user.username in main_admin_list:
+        if message.chat.type != 'private':
+            for i in reps:
+                reps[i] = 0
+            bot.reply_to(message, "Leaderboard has been reset!")
+        else:
+            bot.reply_to(message, "This command cannot be executed in my PM :)")
+    else:
+        bot.reply_to(message, "You are not allowed to execute this command")
+
 
 
 bot.polling(none_stop=True)
