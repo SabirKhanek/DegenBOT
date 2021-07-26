@@ -83,6 +83,7 @@ def start(message):
                      "Hey! This bot will forward potential investment calls from Degen Defi group to a specified "
                      "channel so that no one will miss any call. Subscribe to this channel: "
                      "https://t.me/DegenDefiAnnouncementChannel")
+        bot.reply_to(message, str(message.chat.id))
     else:
         bot.reply_to(message, "Heya :) PM me with /help to see my commands")
 
@@ -463,4 +464,12 @@ def resetleaderboard(message):
         bot.reply_to(message, "You are not allowed to execute this command")
 
 
-bot.polling()
+while True:
+    try:
+        bot.infinity_polling()
+    except Exception as e:
+        time.sleep(15)
+        bot.send_message(1761035007, "Bot is down")
+
+
+        
