@@ -1,5 +1,17 @@
 import telebot
 import time
+from web3 import Web3
+
+bsc_test = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+bsc_main = 'https://bsc-dataseed.binance.org/'
+
+try:
+    web3 = Web3(Web3.HTTPProvider(bsc_main))
+except:
+    bot.send_message(1761035007, "Can't connect to mainnet")
+
+if web3.isConnected():
+    print('Connected to mainnet...')
 
 
 class Voter:
@@ -463,6 +475,24 @@ def resetleaderboard(message):
     else:
         bot.reply_to(message, "You are not allowed to execute this command")
 
+        
+@bot.message_handler(commands='checkbalance')
+def checkbalance(message):
+    try:
+        user = message.text.split()[1]
+    except:
+        bot.reply_to(message, "You have to enter address after command like @checkbalance 0x000...")
+        return
+    try:
+        balance = web3.eth.get_balance(user)
+    except:
+        bot.reply_to(message, "Error: Invalid address")
+        return
+
+    humanReadable_balance = web3.fromWei(balance, 'ether')
+    bot.reply_to(message, "Your BNB balance is: " + str(humanReadable_balance))
+    
+    
 
 while True:
     try:
