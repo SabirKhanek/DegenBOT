@@ -458,7 +458,7 @@ def showreps(message):
         return
 
     try:
-        bot.reply_to(message, "@" + user + " has " + str(reps.get(user)) + " reps! Always DYOR before investing!!!"))
+        bot.reply_to(message, "@" + user + " has " + str(reps.get(user)) + " reps! Always DYOR before investing!!!")
     except:
         bot.reply_to(message, "@" + user + " has 0 rep! Always DYOR before investing!!!")
 
