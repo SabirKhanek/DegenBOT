@@ -500,6 +500,7 @@ while True:
     except Exception as e:
         time.sleep(15)
         bot.send_message(1761035007, "Bot is down")
+        print("Bot is down") 
 
 
         
