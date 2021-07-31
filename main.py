@@ -106,7 +106,7 @@ def getTokenInfo(token_address):
                        "*Symbol:* " + symbol + '\n' +
                        "*price:* " + '%.16f' % float(price) + " $" + "\n"
                                                                      "*Market Cap:* " + str(mcap) + " $ " + '\n' +
-                       "*Market Cap (excl. Burnt):* " + ' $ ' + " (≈ " + mcap_in_words + ") " + "\n" +
+                       "*Market Cap (excl. Burnt): * " + str(mcap_exc_burnt) + ' $ ' + " (≈ " + mcap_in_words + ") " + "\n" +
                        "*Ownership:* " + renounced_stat + '\n' +
                        "*Burnt tokens:* " + str(burn) + '%' + '\n' +
                        "*Verification status:* CONTRACT " + isVerified + '\n'
