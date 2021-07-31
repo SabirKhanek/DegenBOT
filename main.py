@@ -93,7 +93,7 @@ def getTokenInfo(token_address):
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
             mcap_in_words = 'Around ' + num2words(str(mcap_exc_burnt))[0:mcap_in_words_index]
         except:
-            mcap_in_words = num2words(str(supply))
+            mcap_in_words = num2words(str(mcap_exc_burnt))
         try:
             supply_in_words_index = num2words(str(supply)).index(',')
             supply_in_words = 'Around ' + num2words(str(supply))[0:supply_in_words_index]
@@ -167,7 +167,7 @@ def getInfo(token_address, wallet_address):
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
             mcap_in_words = 'Around ' + num2words(str(mcap_exc_burnt))[0:mcap_in_words_index]
         except:
-            mcap_in_words = num2words(str(supply))
+            mcap_in_words = num2words(str(mcap_exc_burnt))
         holder_address = web3.toChecksumAddress(wallet_address)
         try:
             supply_in_words_index = num2words(str(supply)).index(',')
