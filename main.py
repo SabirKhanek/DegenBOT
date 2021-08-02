@@ -109,10 +109,28 @@ def isRenounced(token_address, abi):
                     '0x0000000000000000000000000000000000000001']
     contract_address = web3.toChecksumAddress(token_address)
     contract = web3.eth.contract(address=contract_address, abi=abi)
-    if str(contract.functions.owner().call()) in burn_address:
-        return 'Renounced'
-    else:
-        return 'Not renounced'
+    try:
+        if str(contract.functions.owner().call()) in burn_address:
+            return 'Renounced'
+        else:
+            return 'Not renounced'
+    except:
+        i = 0
+        
+    try:
+        if str(contract.functions.getOwner().call()) in burn_address:
+            return 'Renounced'
+        else:
+            return 'Not renounced'
+        
+    except:
+        i = 1
+        
+    raise
+    
+    
+        
+       
 
 
 def burntPercentage(token_address, abi, supply):
