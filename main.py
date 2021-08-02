@@ -14,6 +14,90 @@ class obj(object):
         self.__dict__.update(dict_)
 
 
+def amountToDec(address, amount):
+    try:
+        totokencontract = getContract(address)
+        if totokencontract == 0:
+            raise
+    except:
+        raise
+
+    decimals = totokencontract.functions.decimals().call()
+
+    return amount * pow(10, decimals)
+
+
+def decToAmount(address, amount):
+    try:
+        totokencontract = getContract(address)
+        if totokencontract == 0:
+            raise
+    except:
+        raise
+
+    decimals = totokencontract.functions.decimals().call()
+
+    return amount / pow(10, decimals)
+
+
+def getPancake(address):
+    token_address = web3.toChecksumAddress(address)
+    API_ENDPOINT = 'https://api.pancakeswap.info/api/v2/tokens/' + token_address
+
+    r = requests.get(url=API_ENDPOINT)
+    response = r.json()
+    TokenData = json.loads(json.dumps(response), object_hook=obj)
+    TokenData = TokenData.data
+
+    return TokenData
+
+
+def getContract(address):
+    try:
+        address = web3.toChecksumAddress(address)
+
+        url_bsc = 'https://api.bscscan.com/api'
+        contract_address = web3.toChecksumAddress(address)
+        API_ENDPOINT = url_bsc + "?module=contract&action=getabi&address=" + str(contract_address) + \
+                       "&apikey=XE4D19S8B6F2GP5QZXHQK34J3Q3QP77DT9"
+
+        r = requests.get(url=API_ENDPOINT)
+        response = r.json()
+        abi = json.loads(response["result"])
+
+        contract = web3.eth.contract(address=contract_address, abi=abi)
+        return contract
+    except:
+        return 0
+
+
+def getPrice(totoken, fromtoken, amount=1):
+    try:
+        totokencontract = getContract(fromtoken)
+        if totokencontract == 0:
+            raise
+    except:
+        raise
+
+    decimals = totokencontract.functions.decimals().call()
+
+    tokentosell = str(amount * (pow(10, int(decimals))))
+
+    url_api = 'https://bsc.api.0x.org/swap/v1/quote?buyToken='
+    totoken = web3.toChecksumAddress(totoken)
+    fromtoken = web3.toChecksumAddress(fromtoken)
+
+    API_ENDPOINT = url_api + totoken + '&sellToken=' + fromtoken + '&sellAmount=' + tokentosell + \
+                   '&excludedSources=BakerySwap,Belt,DODO,DODO_V2,Ellipsis,Mooniswap,MultiHop,' \
+                   'Nerve,SushiSwap,Smoothy,ApeSwap,CafeSwap,CheeseSwap,JulSwap,LiquidityProvider'
+
+    r = requests.get(url=API_ENDPOINT)
+    response = r.json()
+
+    price = response.get("price")
+    return price
+
+
 def isWallet(address):
     address = web3.toChecksumAddress(address)
     return web3.eth.getCode(address) == web3.eth.getCode('0x497089B11903B5946f41C700c9479A13DFf5BB23')
@@ -53,6 +137,7 @@ def burntPercentage(token_address, abi, supply):
 
 def getTokenInfo(token_address):
     try:
+        
         isVerified = 'NOT VERIFIED ❌'
         url_bsc = 'https://api.bscscan.com/api'
         contract_address = web3.toChecksumAddress(token_address)
@@ -74,39 +159,58 @@ def getTokenInfo(token_address):
 
         contract = web3.eth.contract(address=contract_address, abi=abi)
 
-        API_ENDPOINT = 'https://api.pancakeswap.info/api/v2/tokens/' + contract_address
+        try:
+            TokenData = getPancake(contract_address)
+            name = TokenData.name
+            symbol = TokenData.symbol
+        except:
+            name = contract.functions.name().call()
+            symbol = contract.functions.symbol().call()
 
-        r = requests.get(url=API_ENDPOINT)
-        response = r.json()
-        TokenData = json.loads(json.dumps(response), object_hook=obj)
-        TokenData = TokenData.data
+        price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', contract_address)
+        BNB_price = getPrice(contract_address, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
-        name = TokenData.name
-        symbol = TokenData.symbol
-        price = TokenData.price
-        supply = web3.fromWei(contract.functions.totalSupply().call(), 'gwei')
-        renounced_stat = isRenounced(token_address, abi=abi)
+        supply_wei = contract.functions.totalSupply().call()
+        decimals = pow(10, contract.functions.decimals().call())
+
+        supply = supply_wei / decimals
+
+        try:
+            renounced_stat = isRenounced(token_address, abi=abi)
+        except:
+            renounced_stat = 'NULL'
+
         burn = burntPercentage(token_address, abi=abi, supply=supply)
+
+        BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
+
         mcap = float(price) * int(supply)
         mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
+
         try:
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
             mcap_in_words = 'Around ' + num2words(str(mcap_exc_burnt))[0:mcap_in_words_index]
         except:
             mcap_in_words = num2words(str(mcap_exc_burnt))
+
         try:
             supply_in_words_index = num2words(str(supply)).index(',')
             supply_in_words = 'Around ' + num2words(str(supply))[0:supply_in_words_index]
         except:
             supply_in_words = num2words(str(supply))
 
+            mcap_exc_burnt = int(mcap_exc_burnt)
+
         return_text = ("*CA:* " + str(contract_address) + '\n\n'
                                                           "*Token name:* " + name + '\n' +
-                       "*Token supply:* " + str(supply) + " (≈ " + supply_in_words + ')\n' +
-                       "*Symbol:* " + symbol + '\n' +
+                       "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" +
+                       "*Token supply:* " + str(int(supply)) + " (≈ " + supply_in_words + ')\n' +
+                       "*Symbol:* " + symbol + '\n\n' +
                        "*price:* " + '%.16f' % float(price) + " $" + "\n"
-                                                                     "*Market Cap:* " + str(mcap) + " $ " + '\n' +
-                       "*Market Cap (excl. Burnt): * " + str(mcap_exc_burnt) + ' $ ' + " (≈ " + mcap_in_words + ") " + "\n" +
+                       "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" +
+                       "*1 BNB:* " + '%.2f' % float(BNB_price) + " " + symbol + "\n\n"
+                       "*Market Cap: * " + "{:,}".format(mcap_exc_burnt) + ' $ ' +
+                       " (≈ " + mcap_in_words + ") " + "\n\n" +
                        "*Ownership:* " + renounced_stat + '\n' +
                        "*Burnt tokens:* " + str(burn) + '%' + '\n' +
                        "*Verification status:* CONTRACT " + isVerified + '\n'
@@ -117,6 +221,8 @@ def getTokenInfo(token_address):
 
 
 def getInfo(token_address, wallet_address):
+    token_address = web3.toChecksumAddress(token_address)
+    wallet_address = web3.toChecksumAddress(wallet_address)
     try:
         isVerified = 'NOT VERIFIED ❌'
         url_bsc = 'https://api.bscscan.com/api'
@@ -142,24 +248,25 @@ def getInfo(token_address, wallet_address):
 
         contract = web3.eth.contract(address=contract_address, abi=abi)
 
-        gwei_eth = 'gwei'
+        token_balance = ('%.3f' % decToAmount(token_address, contract.functions.balanceOf(query_address).call()))
 
-        if contract.functions.symbol().call() in pegged:
-            gwei_eth = 'ether'
+        try:
+            TokenData = getPancake(contract_address)
+            name = TokenData.name
+            symbol = TokenData.symbol
+        except:
+            name = contract.functions.name().call()
+            symbol = contract.functions.symbol().call()
 
-        token_balance = ('%.5f' % web3.fromWei(contract.functions.balanceOf(query_address).call(), gwei_eth))
-        API_ENDPOINT = 'https://api.pancakeswap.info/api/v2/tokens/' + token_address
+        price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', contract_address)
+        BNB_price = getPrice(contract_address, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
+        BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
-        r = requests.get(url=API_ENDPOINT)
-        response = r.json()
-        TokenData = json.loads(json.dumps(response), object_hook=obj)
-        TokenData = TokenData.data
+        supply_wei = contract.functions.totalSupply().call()
+        decimals = pow(10, contract.functions.decimals().call())
 
-        name = TokenData.name
-        symbol = TokenData.symbol
-        price = TokenData.price
         balance = float(token_balance) * float(price)
-        supply = web3.fromWei(contract.functions.totalSupply().call(), 'gwei')
+        supply = supply_wei / decimals
         burn = burntPercentage(token_address, abi=abi, supply=supply)
         mcap = float(price) * int(supply)
         mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
@@ -167,25 +274,26 @@ def getInfo(token_address, wallet_address):
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
             mcap_in_words = 'Around ' + num2words(str(mcap_exc_burnt))[0:mcap_in_words_index]
         except:
-            mcap_in_words = num2words(str(mcap_exc_burnt))
-        holder_address = web3.toChecksumAddress(wallet_address)
+            mcap_in_words = num2words(int(mcap_exc_burnt))
         try:
             supply_in_words_index = num2words(str(supply)).index(',')
             supply_in_words = 'Around ' + num2words(str(supply))[0:supply_in_words_index]
         except:
             supply_in_words = num2words(str(supply))
 
-        return_text = "*Token Address: *" + contract_address + "\n" \
-                                                               "*Holder Address:* " + holder_address + "\n\n" \
-                                                                                                       "*Token name:* " + name + "\n" + "*Token supply:* " + str(
-            supply) + " (≈ " + supply_in_words + ")\n" \
-                      + "*Symbol:* " + symbol + "\n" + "*price:* " + '%.16f' % float(price) + " $" + "\n" \
-                      + "*Market Cap:* " + str(mcap) + " $ " + "\n" + \
-                      "*Market Cap (excl. Burnt):* " + mcap_exc_burnt + ' $ ' + " (≈ " + mcap_in_words + ") " + "\n" + \
-                      "*Token Balance:* " + token_balance + "\n" + \
-                      "*Balance $:* " + str(balance) + "$" + "\n" \
-                      + "*Burnt tokens:* " + str(burn) + '%' + "\n" + \
-                      "*Verification status: CONTRACT " + str(isVerified)+ "*" + '\n'
+        return_text = "*Token Address: *" + str(contract_address) + "\n\n" \
+                                                                    "*Token name:* " + name + "\n" + \
+                      "*Token supply:* " + \
+                      "{:,}".format(int(supply)) + " (≈ " + supply_in_words + ")\n" \
+                      + "*Symbol:* " + symbol + "\n\n" + "*price:* " + '%.16f' % float(price) + " $" + "\n" \
+                      + "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" \
+                      + "*1 BNB:* " + '%.5f' % float(BNB_price) + " " + symbol + "\n\n" \
+                      + "*Market Cap:* " + "{:,}".format(int(mcap_exc_burnt)) + ' $ ' + \
+                      " (≈ " + mcap_in_words + ") " + "\n\n" + \
+                      "*Token Balance:* " + "{:.2f}".format(float(token_balance)) + "\n" + \
+                      "*Balance $:* " + "{:.2f}".format(float(balance)) + "$" + "\n\n" \
+                      + "*Burnt tokens:* " + str(burn) + '%' + "\n\n" + \
+                      "*Verification status: CONTRACT " + str(isVerified) + "*" + '\n'
 
         return return_text
     except:
@@ -214,15 +322,20 @@ def bnbbalance(walletaddress):
         balance = web3.eth.get_balance(walletaddress)
         humanreadable_balance = web3.fromWei(balance, 'ether')
         humanreadable_balance = '%.5f' % float(humanreadable_balance)
+
+        # BNB_price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56',
+        # '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c') humanreadable_balance = '\nBNB price: ' + BNB_price +
+        # '\nBalance in USD: ' + str(BNB_price*balance)
+
         return humanreadable_balance
     except:
         return 'null'
 
 
 def tokenbalance(wallet_address, req_symbol):
+    contract_address = web3.toChecksumAddress(registered_tokens.get(req_symbol))
     try:
         url_bsc = 'https://api.bscscan.com/api'
-        contract_address = web3.toChecksumAddress(registered_tokens.get(req_symbol))
         API_ENDPOINT = url_bsc + "?module=contract&action=getabi&address=" + str(contract_address) + \
                        "&apikey=XE4D19S8B6F2GP5QZXHQK34J3Q3QP77DT9"
 
@@ -234,12 +347,8 @@ def tokenbalance(wallet_address, req_symbol):
 
         contract = web3.eth.contract(address=contract_address, abi=abi)
 
-        gwei_eth = 'gwei'
+        token_balance = ('%.5f' % decToAmount(contract_address, contract.functions.balanceOf(query_address).call()))
 
-        if contract.functions.symbol().call() in pegged:
-            gwei_eth = 'ether'
-
-        token_balance = ('%.5f' % web3.fromWei(contract.functions.balanceOf(query_address).call(), gwei_eth))
         return token_balance
     except:
         return 'null'
@@ -247,16 +356,29 @@ def tokenbalance(wallet_address, req_symbol):
 
 def getPortfolio(addresss):
     BNB = bnbbalance(addresss)
+    BNB_price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
+    BNB_balance = float(BNB_price) * float(BNB)
+    BNB_balance = "{:.2f}".format(BNB_balance)
+    print(BNB_balance)
     BUSD = tokenbalance(addresss, 'BUSD')
+    print(BUSD)
     USDT = tokenbalance(addresss, 'USDT')
     ETH = tokenbalance(addresss, 'ETH')
+    ETH_price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', registered_tokens.get('ETH'))
+    ETH_balance = float(ETH_price) * float(ETH)
+    ETH_balance = "{:.2f}".format(ETH_balance)
     XRP = tokenbalance(addresss, 'XRP')
+    XRP_price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', registered_tokens.get('XRP'))
+    XRP_balance = float(XRP_price) * float(XRP)
+    XRP_balance = "{:.2f}".format(XRP_balance)
+    
     mess_text = '*Wallet address:* ' + str(addresss) + '\n' \
-                + "*BNB balance =* " + str(BNB) + '\n' \
+                + "*BNB balance =* " + str(BNB) + ' ~ ' + BNB_balance + '$\n' \
                 + "*BUSD balance =* " + str(BUSD) + '\n' \
                 + "*USDT balance =* " + str(USDT) + '\n' \
-                + "*ETH balance =* " + str(ETH) + '\n' \
-                + "*XRP balance =* " + str(XRP) + '\n'
+                + "*ETH balance =* " + str(ETH) + ' ~ ' + ETH_balance + '$\n' \
+                + "*XRP balance =* " + str(XRP) + ' ~ ' + XRP_balance + '$\n'
+    print(mess_text)
     time.sleep(1)
     return mess_text
 
@@ -330,10 +452,8 @@ for i in main_admin_list:
 
 reps = {'ClaraOrtiz310': 3, 'jonwath': 1, 'CryptoMutt': 1}
 
-BOT_KEY = "1936324922:AAEH0txLddXCBrsxMfOpxR0X_5hLf1VVekE"
+BOT_KEY = "1849791064:AAGTIJw0ehmK-op7Ye9buRe-xmpjF11f0LE"
 bot = telebot.TeleBot(BOT_KEY)
-
-pegged = ['ETH', 'ADA', 'USDT', 'XRP', 'USDC', 'BUSD']
 
 registered_address = {'sabirdev0': '0x043013E6a9946Ce388b7d61228a101926d911252'}
 
@@ -373,13 +493,6 @@ if restore:
         print("registeredtoken.pkl Backup file not available")
 
     try:
-        backupfile = open("pegged_record.pkl", "rb")
-        pegged = pickle.load(backupfile)
-        backupfile.close()
-    except:
-        print('pegged_record.pkl not found')
-
-    try:
         backupfile = open("reps.pkl", "rb")
         reps = pickle.load(backupfile)
         backupfile.close()
@@ -389,6 +502,7 @@ if restore:
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message,
                      "Hey! This bot will forward potential investment calls from Degen Defi group to a specified "
@@ -400,8 +514,9 @@ def start(message):
 
 @bot.message_handler(commands=['help'])
 def help(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
+    time.sleep(2)
     if message.chat.type == 'private' or True:
-        print('here')
         mess_text = ("Support the creator:\n"
                      "/donate - support my father :)\n\n"
                      ""
@@ -411,7 +526,7 @@ def help(message):
                      ""
                      "Manage pre-defined addresses of the tokens:\n"
                      "/regToken - Register a token address\n"
-                     "/removeaddress - Remove a token address from the list\n"
+                     "/removeregtoken - Remove a token address from the list\n"
                      "/showtokens - Display list of token addresses in the list\n\n"
                      ""
                      "Registering wallet address:\n"
@@ -422,9 +537,9 @@ def help(message):
                      "/getbalance - {Symbol/Address} {Wallet Address} return balance of given address\n\n"
                      ""
                      "Retrieving Token information:\n"
-                     "*{Symbol}* - returns token information of registered symbol\n"
-                     "*{Address}* - returns token information of given contract address\n"
-                     "*{Wallet}* - returns portfolio of given wallet address\n\n"
+                     "{Symbol} - returns token information of registered symbol\n"
+                     "{Address} - returns token information of given contract address\n"
+                     "{Wallet} - returns portfolio of given wallet address\n\n"
                      ""
                      "Manage bot admins:\n"
                      "/addadmin - This command will add an admin for the bot\n"
@@ -455,7 +570,7 @@ def help(message):
                      "Enabled: A voter can vote individually a user once in a day\n"
                      "Disabled: Only one voter from the voter list can vote a user within a day\n"
                      "USE THIS COMMAND CAREFULLY")
-        bot.reply_to(message,mess_text)
+        bot.reply_to(message, mess_text)
 
     else:
         bot.reply_to(message, "Heya :) PM me with /help to see my commands")
@@ -468,6 +583,7 @@ def greet(message):
 
 @bot.message_handler(commands=['announce'])
 def announce(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
         return
@@ -488,6 +604,7 @@ def announce(message):
 
 @bot.message_handler(commands=['banuser'])
 def banuser(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username in bot_admin_list:
         try:
             user = message.text.split()[1]
@@ -519,6 +636,7 @@ def banuser(message):
 
 @bot.message_handler(commands=['unbanuser'])
 def unbanuser(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username in bot_admin_list:
         try:
             user = message.text.split()[1]
@@ -543,6 +661,7 @@ def unbanuser(message):
 
 @bot.message_handler(commands=['showbanned'])
 def showbanned(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     mess_text = "Banned Users list: "
     for i in disallowed_user_list:
         mess_text += "\n" + "@" + i
@@ -558,6 +677,7 @@ def showbanned(message):
 
 @bot.message_handler(commands=['addadmin'])
 def addadmin(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username in main_admin_list:
         if message.chat.type == 'private':
             bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
@@ -582,6 +702,7 @@ def addadmin(message):
 
 @bot.message_handler(commands=['removeadmin'])
 def removeadmin(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username in main_admin_list:
         if message.chat.type == 'private':
             bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
@@ -608,6 +729,7 @@ def removeadmin(message):
 
 @bot.message_handler(commands=['showadmin'])
 def showadmin(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     mess_text = "Admin list: "
     for i in bot_admin_list:
         mess_text += "\n" + "@" + i
@@ -616,6 +738,7 @@ def showadmin(message):
 
 @bot.message_handler(commands=['addvoter'])
 def addvoter(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
         return
@@ -640,6 +763,7 @@ def addvoter(message):
 
 @bot.message_handler(commands=['removevoter'])
 def removevoter(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
         return
@@ -668,6 +792,7 @@ def removevoter(message):
 
 @bot.message_handler(commands=['showvoters'])
 def showvoters(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     mess_text = "Voters list: "
     for i in voter_list:
         mess_text += "\n" + "@" + i
@@ -676,6 +801,7 @@ def showvoters(message):
 
 @bot.message_handler(commands=['rep'])
 def rep(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username in voter_list:
         if message.chat.type == 'private':
             bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
@@ -703,6 +829,7 @@ def rep(message):
 
 @bot.message_handler(commands=['showleaderboard'])
 def showleaderboard(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
         return
@@ -726,6 +853,7 @@ def showleaderboard(message):
 # noinspection PyBroadException
 @bot.message_handler(commands=['wennextvote'])
 def wennextvote(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username in voter_list:
         try:
             user = message.text.split()[1]
@@ -749,6 +877,7 @@ def wennextvote(message):
 
 @bot.message_handler(commands=['vote_type_switch'])
 def vote_type_switch(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
         return
@@ -759,6 +888,7 @@ def vote_type_switch(message):
 
 @bot.message_handler(commands=['showreps'])
 def showreps(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.chat.type == 'private':
         bot.reply_to(message, "This command can only be executed in Degen Defi group :)")
         return
@@ -777,6 +907,7 @@ def showreps(message):
 
 @bot.message_handler(commands=['resetleaderboard'])
 def resetleaderboard(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     if message.from_user.username == 'sabirdev0':
         if message.chat.type != 'private':
             for i in reps:
@@ -790,6 +921,7 @@ def resetleaderboard(message):
 
 @bot.message_handler(commands=['regaddress'])
 def regaddress(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     username = message.from_user.username
     try:
         address = message.text.split()[1]
@@ -834,6 +966,7 @@ def regToken(message):
 
 @bot.message_handler(commands=['showtokens'])
 def showtokens(message):
+    bot.send_chat_action(message.chat.id, 'typing',timeout=5)
     mess_text = 'Registered tokens and addresses:' + '\n'
     for i in registered_tokens.keys():
         mess_text = mess_text + '*' + i + '*' + ' - ' + registered_tokens.get(i) + '\n'
@@ -843,6 +976,7 @@ def showtokens(message):
 
 @bot.message_handler(commands=['removeregtoken'])
 def removeregtoken(message):
+    bot.send_chat_action(message.chat.id, 'typing',timeout=5)
     username = message.from_user.username
     if username in main_admin_list:
         try:
@@ -862,32 +996,18 @@ def removeregtoken(message):
 
 @bot.message_handler(commands=['donate'])
 def donate(message):
+    bot.send_chat_action(message.chat.id, 'typing')
+    time.sleep(2)
     bot.reply_to(message, "It took a lot of work for my father to get me to where I am now -"
-                          " so if you have some money to spare, and want to show your support; Donate!\n"
-                          "BSC: 0x497089B11903B5946f41C700c9479A13DFf5BB23\n"
+                          " so if you have some money to spare, and want to show your support; Donate!\n\n"
+                          "BSC: 0x497089B11903B5946f41C700c9479A13DFf5BB23\n\n"
                           "Always nice to see my work is appreciated :)"
                           "Thank you for your generosity!")
 
 
-@bot.message_handler(commands=['addpeg'])
-def addpeg(message):
-    if message.from_user.username == 'sabirdev0':
-        try:
-            peg = message.text.split()[1]
-        except:
-            bot.reply_to(message, "You have to mention the symbol after the command like /addpeg {symbol}")
-            return
-
-        if peg in pegged:
-            bot.reply_to(message, (peg + " is already in the pegged list!"))
-            return
-
-        pegged.append(peg)
-        savedata(message=0)
-
-
 @bot.message_handler(commands=['getbalance'])
 def getbalance(message):
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     error_message_command = "*Command pattern is invalid... You haven't registered your wallet address yet\n" \
                             "/getbalance {TokenAddress/Symbol} available only if you register your wallet with " \
                             "/regaddress\n" \
@@ -913,7 +1033,12 @@ def getbalance(message):
 
     if len(message.text.split()) == 1 and message.from_user.username in registered_address:
         try:
-            mess_text = 'Your BNB balance is : ' + bnbbalance(registered_address.get(message.from_user.username))
+            bnb_balance = bnbbalance(registered_address.get(message.from_user.username))
+            bnb_balance_usd = getPrice(registered_tokens.get('BUSD'),
+                                       '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
+            bnb_balance_usd = float(bnb_balance) * float(bnb_balance_usd)
+
+            mess_text = 'Your BNB balance is : ' + bnb_balance + ' BNB ~(' + str(bnb_balance_usd) + ' $)'
         except:
             mess_text = '*Whoops! I guess you have registered an invalid wallet address ' \
                         '/regaddress (address) again to fix this issue*'
@@ -1123,21 +1248,12 @@ def getbalance(message):
 @bot.message_handler(commands=['savedata'])
 def savedata(message):
     try:
-        backupfile = open("pegged_record.pkl", "wb")
-        backupfile.truncate()
-        pickle.dump(pegged, backupfile)
-        backupfile.close()
-    except:
-        print('peg save fale')
-
-    try:
         backupfile = open("registeredtokens.pkl", "wb")
         backupfile.truncate()
         pickle.dump(registered_tokens, backupfile)
         backupfile.close()
     except:
         print('save fale')
-
     try:
         backupfile = open("registeredaddress.pkl", "wb")
         backupfile.truncate()
@@ -1162,7 +1278,7 @@ def savedata(message):
                      content_types=['audio', 'photo', 'voice', 'video', 'document', 'text', 'location', 'contact',
                                     'sticker'])
 def default_command(message):
-    print('here')
+    
     chat_id = message.chat.id
     message_id = message.id
 
@@ -1181,8 +1297,8 @@ def default_command(message):
                 raise
             addresses.append(address)
         except:
-            if f in registered_tokens.keys():
-                address = registered_tokens.get(f)
+            if f.upper() in registered_tokens.keys():
+                address = registered_tokens.get(f.upper())
                 addresses.append(address)
             continue
 
@@ -1190,12 +1306,14 @@ def default_command(message):
         for i in addresses:
             if isWallet(i):
                 try:
+                    bot.send_chat_action(message.chat.id, 'typing')
                     bot.reply_to(message, getPortfolio(i), parse_mode=telegram.ParseMode.MARKDOWN)
                 except:
                     bot.reply_to(message, text='Address: ' + str(i) + ' is not a wallet address')
                     continue
             else:
                 try:
+                    bot.send_chat_action(message.chat.id, 'typing')
                     mess_text = getTokenInfo(i)
                 except:
                     bot.reply_to(message, text='Address: ' + str(i) + ' is not a wallet address')
