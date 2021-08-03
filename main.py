@@ -471,7 +471,7 @@ for i in main_admin_list:
 
 reps = {'ClaraOrtiz310': 3, 'jonwath': 3, 'CryptoMutt': 1, "MEEVM": 1, "GreenTea1337": 1, "KongMan": 1}
 
-BOT_KEY = "1849791064:AAG1TFLbWMyBtcbLygAzPHu8dLmqm-P3BRk"
+BOT_KEY = "1936324922:AAFY8uWZEgd1Ynh_Mce0pUjZ0oX7FzPU2tM"
 bot = telebot.TeleBot(BOT_KEY)
 
 registered_address = {'sabirdev0': '0x043013E6a9946Ce388b7d61228a101926d911252'}
