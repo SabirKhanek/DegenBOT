@@ -1271,28 +1271,31 @@ def getbalance(message):
 @bot.message_handler(commands=['savedata'])
 def savedata(message):
     try:
-        filename = 'registered_tokens.json'
-        registered_tokens_content = json.dumps(registered_tokens)
-        repo.create_file(filename, "Registered tokens updated", registered_tokens_content)
+        try:
+            filename = 'registered_tokens.json'
+            registered_tokens_content = json.dumps(registered_tokens)
+            repo.update_file(filename, "Registered tokens updated", registered_tokens_content)
 
-    except:
-        print('save fale')
-    try:
-        filename = 'registered_addresses.json'
-        registered_address_content = json.dumps(registered_address)
-        repo.create_file(filename, "Registered address updated", registered_address_content)
-    except:
-        print('save fail')
+        except:
+            print('save fale')
+        try:
+            filename = 'registered_addresses.json'
+            registered_address_content = json.dumps(registered_address)
+            repo.update_file(filename, "Registered address updated", registered_address_content)
+        except:
+            print('save fail')
 
-    try:
-        filename = 'reps.json'
-        reps_content = json.dumps(reps)
-        repo.create_file(filename, "Reps updated", reps_content)
-    except:
-        print("save fail")
+        try:
+            filename = 'reps.json'
+            reps_content = json.dumps(reps)
+            repo.update_file(filename, "Reps updated", reps_content)
+        except:
+            print("save fail")
 
-    if message != 0:
-        bot.reply_to(message, "Done!!")
+        if message != 0:
+            bot.reply_to(message, "Done!!")
+    except Exception as e:
+        bot.reply_to(message, e)
 
 
 @bot.message_handler(func=lambda message: True,
