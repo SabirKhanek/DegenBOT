@@ -6,6 +6,7 @@ from web3 import Web3
 import json
 import pickle
 import requests
+from github import Github
 from num2words import num2words
 
 
@@ -109,28 +110,10 @@ def isRenounced(token_address, abi):
                     '0x0000000000000000000000000000000000000001']
     contract_address = web3.toChecksumAddress(token_address)
     contract = web3.eth.contract(address=contract_address, abi=abi)
-    try:
-        if str(contract.functions.owner().call()) in burn_address:
-            return 'Renounced'
-        else:
-            return 'Not renounced'
-    except:
-        i = 0
-        
-    try:
-        if str(contract.functions.getOwner().call()) in burn_address:
-            return 'Renounced'
-        else:
-            return 'Not renounced'
-        
-    except:
-        i = 1
-        
-    raise
-    
-    
-        
-       
+    if str(contract.functions.owner().call()) in burn_address:
+        return 'Renounced'
+    else:
+        return 'Not renounced'
 
 
 def burntPercentage(token_address, abi, supply):
@@ -141,9 +124,12 @@ def burntPercentage(token_address, abi, supply):
     query_address_3 = web3.toChecksumAddress('0x0000000000000000000000000000000000000001')
 
     contract = web3.eth.contract(address=contract_address, abi=abi)
-    token_balance_1 = ('%.5f' % web3.fromWei(contract.functions.balanceOf(query_address_1).call(), 'gwei'))
-    token_balance_2 = ('%.5f' % web3.fromWei(contract.functions.balanceOf(query_address_2).call(), 'gwei'))
-    token_balance_3 = ('%.5f' % web3.fromWei(contract.functions.balanceOf(query_address_3).call(), 'gwei'))
+    token_balance_1 = ('%.5f' % decToAmount(address=contract_address,
+                                            amount=contract.functions.balanceOf(query_address_1).call()))
+    token_balance_2 = ('%.5f' % decToAmount(address=contract_address,
+                                            amount=contract.functions.balanceOf(query_address_2).call()))
+    token_balance_3 = ('%.5f' % decToAmount(address=contract_address,
+                                            amount=contract.functions.balanceOf(query_address_3).call()))
 
     total_tokens_burnt = float(token_balance_1) + float(token_balance_2) + float(token_balance_3)
 
@@ -155,7 +141,7 @@ def burntPercentage(token_address, abi, supply):
 
 def getTokenInfo(token_address):
     try:
-        
+
         isVerified = 'NOT VERIFIED ❌'
         url_bsc = 'https://api.bscscan.com/api'
         contract_address = web3.toChecksumAddress(token_address)
@@ -189,21 +175,28 @@ def getTokenInfo(token_address):
         BNB_price = getPrice(contract_address, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
         supply_wei = contract.functions.totalSupply().call()
+
         decimals = pow(10, contract.functions.decimals().call())
 
         supply = supply_wei / decimals
+        print('supply:' + str(supply))
 
         try:
             renounced_stat = isRenounced(token_address, abi=abi)
         except:
             renounced_stat = 'NULL'
-
+        print(renounced_stat)
         burn = burntPercentage(token_address, abi=abi, supply=supply)
-
+        print(burn)
         BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
         mcap = float(price) * int(supply)
-        mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
+        try:
+            mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
+        except:
+            mcap_exc_burnt = mcap
+
+        print(mcap_exc_burnt)
 
         try:
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
@@ -218,23 +211,27 @@ def getTokenInfo(token_address):
             supply_in_words = num2words(str(supply))
 
             mcap_exc_burnt = int(mcap_exc_burnt)
-
+        print('here')
         return_text = ("*CA:* " + str(contract_address) + '\n\n'
                                                           "*Token name:* " + name + '\n' +
                        "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" +
-                       "*Token supply:* " + str(int(supply)) + " (≈ " + supply_in_words + ')\n' +
+                       "*Token supply:* " + format(int(supply), ',') + " (≈ " + str(supply_in_words) + ')\n' +
                        "*Symbol:* " + symbol + '\n\n' +
                        "*price:* " + '%.16f' % float(price) + " $" + "\n"
-                       "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" +
+                                                                     "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" +
                        "*1 BNB:* " + '%.2f' % float(BNB_price) + " " + symbol + "\n\n"
-                       "*Market Cap: * " + "{:,}".format(mcap_exc_burnt) + ' $ ' +
+                                                                                "*Market Cap: * " + format(
+                    int(mcap_exc_burnt), ',') + ' $ ' +
                        " (≈ " + mcap_in_words + ") " + "\n\n" +
-                       "*Ownership:* " + renounced_stat + '\n' +
+                       "*Ownership:* " + str(renounced_stat) + '\n' +
                        "*Burnt tokens:* " + str(burn) + '%' + '\n' +
                        "*Verification status:* CONTRACT " + isVerified + '\n'
                        )
+
+        print(return_text)
         return return_text
-    except:
+    except Exception as e:
+        print(e)
         return "Contract address: " + str(token_address) + " is not supported"
 
 
@@ -302,14 +299,14 @@ def getInfo(token_address, wallet_address):
         return_text = "*Token Address: *" + str(contract_address) + "\n\n" \
                                                                     "*Token name:* " + name + "\n" + \
                       "*Token supply:* " + \
-                      "{:,}".format(int(supply)) + " (≈ " + supply_in_words + ")\n" \
+                      format(int(supply), ',') + " (≈ " + supply_in_words + ")\n" \
                       + "*Symbol:* " + symbol + "\n\n" + "*price:* " + '%.16f' % float(price) + " $" + "\n" \
                       + "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" \
                       + "*1 BNB:* " + '%.5f' % float(BNB_price) + " " + symbol + "\n\n" \
-                      + "*Market Cap:* " + "{:,}".format(int(mcap_exc_burnt)) + ' $ ' + \
+                      + "*Market Cap:* " + format(int(mcap_exc_burnt), ',') + ' $ ' + \
                       " (≈ " + mcap_in_words + ") " + "\n\n" + \
-                      "*Token Balance:* " + "{:.2f}".format(float(token_balance)) + "\n" + \
-                      "*Balance $:* " + "{:.2f}".format(float(balance)) + "$" + "\n\n" \
+                      "*Token Balance:* " + format(float(token_balance), ',') + "\n" + \
+                      "*Balance $:* " + format(float(balance), ',') + "$" + "\n\n" \
                       + "*Burnt tokens:* " + str(burn) + '%' + "\n\n" + \
                       "*Verification status: CONTRACT " + str(isVerified) + "*" + '\n'
 
@@ -389,7 +386,7 @@ def getPortfolio(addresss):
     XRP_price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', registered_tokens.get('XRP'))
     XRP_balance = float(XRP_price) * float(XRP)
     XRP_balance = "{:.2f}".format(XRP_balance)
-    
+
     mess_text = '*Wallet address:* ' + str(addresss) + '\n' \
                 + "*BNB balance =* " + str(BNB) + ' ~ ' + BNB_balance + '$\n' \
                 + "*BUSD balance =* " + str(BUSD) + '\n' \
@@ -461,6 +458,10 @@ class myBool:
 
 individual_vote_flag = myBool()
 
+GITHUB_ACCESS = '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'
+git = Github(GITHUB_ACCESS)
+repo = git.get_user().get_repo('DegenBOT')
+
 disallowed_user_list = []
 bot_admin_list = ["sabirdev0", "jonwath", "KongMan", "CryptoMUTT", "ReverseWojack", "donmonke0"]
 main_admin_list = ["sabirdev0", "jonwath", "KongMan", "donmonke0", "CryptoMUTT", "ReverseWojack"]
@@ -468,9 +469,9 @@ voter_list = {}
 for i in main_admin_list:
     voter_list[i] = Voter(i)
 
-reps = {'ClaraOrtiz310': 3, 'jonwath': 1, 'CryptoMutt': 1}
+reps = {'ClaraOrtiz310': 3, 'jonwath': 3, 'CryptoMutt': 1, "MEEVM": 1, "GreenTea1337": 1, "KongMan": 1}
 
-BOT_KEY = "1936324922:AAHVG7gCtahfSCbIwpyDtAAslUcL5SvH8Ao"
+BOT_KEY = "1849791064:AAG1TFLbWMyBtcbLygAzPHu8dLmqm-P3BRk"
 bot = telebot.TeleBot(BOT_KEY)
 
 registered_address = {'sabirdev0': '0x043013E6a9946Ce388b7d61228a101926d911252'}
@@ -486,6 +487,8 @@ registered_tokens = {'BUSD': '0xe9e7cea3dedca5984780bafc599bd69add087d56',
                      'USDC': '0xBA5Fe23f8a3a24BEd3236F05F2FcF35fd0BF0B5C'
                      }
 
+price_exceptions = ['BUSD', 'ETH', 'XRP', 'USDT', 'ADA', 'USDC']
+
 bsc_test = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
 bsc_main = 'https://bsc-dataseed.binance.org/'
 
@@ -497,25 +500,27 @@ if web3.isConnected():
 restore = True
 if restore:
     try:
-        backupfile = open("registeredaddress.pkl", "rb")
-        registered_address = pickle.load(backupfile)
-        backupfile.close()
+        filename = "registeredaddress.json"
+        reg_address_file = repo.get_contents(filename)
+        registered_address = json.loads(reg_address_file.decoded_content.decode())
     except:
         print("registeredaddress.pkl Backup file not available")
 
     try:
-        backupfile = open("registeredtokens.pkl", "rb")
-        registered_tokens = pickle.load(backupfile)
-        backupfile.close()
+        filename = "registeredtokens.json"
+        reg_tokens_file = repo.get_contents(filename)
+        registered_tokens = json.loads(reg_tokens_file.decoded_content.decode())
     except:
         print("registeredtoken.pkl Backup file not available")
 
     try:
-        backupfile = open("reps.pkl", "rb")
-        reps = pickle.load(backupfile)
-        backupfile.close()
+        filename = "reps.json"
+        reps_file = repo.get_contents(filename)
+        reps = json.loads(reps_file.decoded_content.decode())
     except:
         print('reps.pkl not found')
+
+    bot.send_message(1761035007, "Bot is restarted and data is restored")
 
 
 @bot.message_handler(commands=['start'])
@@ -984,7 +989,7 @@ def regToken(message):
 
 @bot.message_handler(commands=['showtokens'])
 def showtokens(message):
-    bot.send_chat_action(message.chat.id, 'typing',timeout=5)
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     mess_text = 'Registered tokens and addresses:' + '\n'
     for i in registered_tokens.keys():
         mess_text = mess_text + '*' + i + '*' + ' - ' + registered_tokens.get(i) + '\n'
@@ -994,7 +999,7 @@ def showtokens(message):
 
 @bot.message_handler(commands=['removeregtoken'])
 def removeregtoken(message):
-    bot.send_chat_action(message.chat.id, 'typing',timeout=5)
+    bot.send_chat_action(message.chat.id, 'typing', timeout=5)
     username = message.from_user.username
     if username in main_admin_list:
         try:
@@ -1266,25 +1271,23 @@ def getbalance(message):
 @bot.message_handler(commands=['savedata'])
 def savedata(message):
     try:
-        backupfile = open("registeredtokens.pkl", "wb")
-        backupfile.truncate()
-        pickle.dump(registered_tokens, backupfile)
-        backupfile.close()
+        filename = 'registered_tokens.json'
+        registered_tokens_content = json.dumps(registered_tokens)
+        repo.create_file(filename, "Registered tokens updated", registered_tokens_content)
+
     except:
         print('save fale')
     try:
-        backupfile = open("registeredaddress.pkl", "wb")
-        backupfile.truncate()
-        pickle.dump(registered_address, backupfile)
-        backupfile.close()
+        filename = 'registered_addresses.json'
+        registered_address_content = json.dumps(registered_address)
+        repo.create_file(filename, "Registered address updated", registered_address_content)
     except:
         print('save fail')
 
     try:
-        backupfile = open("reps.pkl", "wb")
-        backupfile.truncate()
-        pickle.dump(reps, backupfile)
-        backupfile.close()
+        filename = 'reps.json'
+        reps_content = json.dumps(reps)
+        repo.create_file(filename, "Reps updated", reps_content)
     except:
         print("save fail")
 
@@ -1296,7 +1299,6 @@ def savedata(message):
                      content_types=['audio', 'photo', 'voice', 'video', 'document', 'text', 'location', 'contact',
                                     'sticker'])
 def default_command(message):
-    
     chat_id = message.chat.id
     message_id = message.id
 
@@ -1315,7 +1317,7 @@ def default_command(message):
                 raise
             addresses.append(address)
         except:
-            if f.upper() in registered_tokens.keys():
+            if f.upper() in registered_tokens.keys() and not f.upper() in price_exceptions:
                 address = registered_tokens.get(f.upper())
                 addresses.append(address)
             continue
