@@ -1271,31 +1271,36 @@ def getbalance(message):
 @bot.message_handler(commands=['savedata'])
 def savedata(message):
     try:
-        try:
-            filename = 'registered_tokens.json'
-            registered_tokens_content = json.dumps(registered_tokens)
-            repo.update_file(filename, "Registered tokens updated", registered_tokens_content)
+        filename = 'registered_tokens.json'
+        contents_to_delete = repo.get_contents(filename)
+        repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
+        registered_tokens_content = json.dumps(registered_tokens)
+        repo.create_file(filename, "Registered tokens updated", registered_tokens_content)
+        bot.send_message(1761035007, "Registered tokens updated")
+    except:
+        print('save fale')
+    try:
+        filename = 'registered_addresses.json'
+        contents_to_delete = repo.get_contents(filename)
+        repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
+        registered_address_content = json.dumps(registered_address)
+        repo.create_file(filename, "Registered address updated", registered_address_content)
+        bot.send_message(1761035007, "Registered address updated")
+    except:
+        print('save fail')
 
-        except:
-            print('save fale')
-        try:
-            filename = 'registered_addresses.json'
-            registered_address_content = json.dumps(registered_address)
-            repo.update_file(filename, "Registered address updated", registered_address_content)
-        except:
-            print('save fail')
+    try:
+        filename = 'reps.json'
+        contents_to_delete = repo.get_contents(filename)
+        repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
+        reps_content = json.dumps(reps)
+        repo.create_file(filename, "Reps updated", reps_content)
+        bot.send_message(1761035007, "Reps updated")
+    except:
+        print("save fail")
 
-        try:
-            filename = 'reps.json'
-            reps_content = json.dumps(reps)
-            repo.update_file(filename, "Reps updated", reps_content)
-        except:
-            print("save fail")
-
-        if message != 0:
-            bot.reply_to(message, "Done!!")
-    except Exception as e:
-        bot.reply_to(message, e)
+    if message != 0:
+        bot.reply_to(message, "Done!!")
 
 
 @bot.message_handler(func=lambda message: True,
