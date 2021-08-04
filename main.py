@@ -504,13 +504,15 @@ if restore:
         reg_address_file = repo.get_contents(filename)
         registered_address = json.loads(reg_address_file.decoded_content.decode())
     except:
+        bot.send_message(1761035007, "Registered addresses are not restored : " + str(e))
         print("registeredaddress.pkl Backup file not available")
 
     try:
         filename = "registeredtokens.json"
         reg_tokens_file = repo.get_contents(filename)
         registered_tokens = json.loads(reg_tokens_file.decoded_content.decode())
-    except:
+    except Exception as e:
+        bot.send_message(1761035007, "Registered token are not restored : " + str(e))
         print("registeredtoken.pkl Backup file not available")
 
     try:
@@ -518,6 +520,7 @@ if restore:
         reps_file = repo.get_contents(filename)
         reps = json.loads(reps_file.decoded_content.decode())
     except:
+        bot.send_message(1761035007, "Reps are not restored : " + str(e))
         print('reps.pkl not found')
 
     bot.send_message(1761035007, "Bot is restarted and data is restored")
