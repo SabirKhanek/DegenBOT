@@ -500,7 +500,7 @@ if web3.isConnected():
 restore = True
 if restore:
     try:
-        filename = "registered_address.json"
+        filename = "registered_addresses.json"
         reg_address_file = repo.get_contents(filename)
         registered_address = json.loads(reg_address_file.decoded_content.decode())
     except Exception as e:
@@ -1279,7 +1279,6 @@ def savedata(message):
         repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
         registered_tokens_content = json.dumps(registered_tokens)
         repo.create_file(filename, "Registered tokens updated", registered_tokens_content)
-        bot.send_message(1761035007, "Registered tokens updated")
     except:
         print('save fale')
     try:
@@ -1288,7 +1287,6 @@ def savedata(message):
         repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
         registered_address_content = json.dumps(registered_address)
         repo.create_file(filename, "Registered address updated", registered_address_content)
-        bot.send_message(1761035007, "Registered address updated")
     except:
         print('save fail')
 
@@ -1298,10 +1296,10 @@ def savedata(message):
         repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
         reps_content = json.dumps(reps)
         repo.create_file(filename, "Reps updated", reps_content)
-        bot.send_message(1761035007, "Reps updated")
     except:
         print("save fail")
-
+        
+    bot.send_message(1761035007, "BACKUP FILES ARE UPDATED")
     if message != 0:
         bot.reply_to(message, "Done!!")
 
