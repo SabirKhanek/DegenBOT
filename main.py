@@ -254,7 +254,7 @@ def getTokenInfo(token_address):
                     int(mcap_exc_burnt), ',') + ' $ ' +
                        " (≈ " + mcap_in_words + ") " + "\n\n" +
                        "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" +
-                       "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" +
+                       "*Liquidity to MCAP ratio: *" + mcap_lp_ratio + "\n\n" +
                        "*Ownership:* " + str(renounced_stat) + '\n' +
                        "*Burnt tokens:* " + str(burn) + '%' + '\n' +
                        "*Verification status:* CONTRACT " + isVerified + '\n'
@@ -351,7 +351,7 @@ def getInfo(token_address, wallet_address):
                       + "*Market Cap:* " + format(int(mcap_exc_burnt), ',') + ' $ ' + \
                       " (≈ " + mcap_in_words + ") " + "\n\n" + \
                       "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" + \
-                      "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" + \
+                      "*Liquidity to MCAP ratio: *" + mcap_lp_ratio + "\n\n" + \
                       "*Token Balance:* " + format(float(token_balance), ',') + "\n" + \
                       "*Balance $:* " + format(float(balance), ',') + "$" + "\n\n" \
                       + "*Burnt tokens:* " + str(burn) + '%' + "\n\n" + \
@@ -582,7 +582,7 @@ def start(message):
                      "channel so that no one will miss any call. Subscribe to this channel: "
                      "https://t.me/DegenDefiAnnouncementChannel")
     else:
-        bot.reply_to(message, "Heya :) PM me with /help to see my commands")
+        bot.reply_to(message, "Hey " + message.from_user.username + " PM me with /help to see my commands")
 
 
 @bot.message_handler(commands=['help'])
@@ -651,7 +651,7 @@ def help(message):
 
 @bot.message_handler(commands=['greet'])
 def greet(message):
-    bot.reply_to(message, "Hey! Subscribe to this channel: https://t.me/DegenDefiAnnouncementChannel")
+    bot.reply_to(message, "Hey! @" + message.from_user.username + " Subscribe to this channel: https://t.me/DegenDefiAnnouncementChannel")
 
 
 @bot.message_handler(commands=['announce'])
@@ -1074,11 +1074,10 @@ def removeregtoken(message):
 def donate(message):
     bot.send_chat_action(message.chat.id, 'typing')
     time.sleep(2)
-    bot.reply_to(message, "It took a lot of work for my father to get me to where I am now -"
-                          " so if you have some money to spare, and want to show your support; Donate!\n\n"
+    bot.reply_to(message, "My father worked really hard while coding me..."
+                          " So if you like my work and want to appreciate it and show your support; Donate!\n\n"
                           "BSC: 0x497089B11903B5946f41C700c9479A13DFf5BB23\n\n"
-                          "Always nice to see my work is appreciated :)"
-                          "Thank you for your generosity!")
+                          "Always nice to see my work is appreciated :)")
 
 
 @bot.message_handler(commands=['getbalance'])
