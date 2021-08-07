@@ -838,6 +838,9 @@ def rep(message):
         except:
             bot.reply_to(message, "You have to mention the user after the command like /addadmin @anyuser")
             return
+        if user == message.from_user.username:
+            bot.reply_to(message, "I am sorry ser but you can't lift your own balls :)")
+            return
         if voter_list.get(message.from_user.username).hasVoted(user):
             bot.reply_to(message, "@" + user + " has been voted earlier. A user can only be /rep once in a day :)")
         else:
