@@ -15,6 +15,28 @@ class obj(object):
         self.__dict__.update(dict_)
 
 
+def getLiquidity(contract_address):
+    pcs_router = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'
+    WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
+    contract_address = web3.toChecksumAddress(contract_address)
+
+    pcs_contract = getContract(pcs_router)
+
+    pair_address = pcs_contract.functions.getPair(contract_address, WBNB).call()
+
+    token_contract = getContract(contract_address)
+
+    lp_holding_balance = token_contract.functions.balanceOf(pair_address).call()
+
+    lp_holding_balance = decToAmount(contract_address, lp_holding_balance)
+
+    token_price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', contract_address)
+
+    lp_holding_balance = float(lp_holding_balance) * float(token_price)
+
+    return lp_holding_balance
+
+
 def amountToDec(address, amount):
     try:
         totokencontract = getContract(address)
@@ -174,12 +196,15 @@ def getTokenInfo(token_address):
         price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', contract_address)
         BNB_price = getPrice(contract_address, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
+        LP_Holdings_USD = getLiquidity(contract_address)
+
+        LP_Holdings_BNB = LP_Holdings_USD / BNB_price
+
         supply_wei = contract.functions.totalSupply().call()
 
         decimals = pow(10, contract.functions.decimals().call())
 
         supply = supply_wei / decimals
-        print('supply:' + str(supply))
 
         try:
             renounced_stat = isRenounced(token_address, abi=abi)
@@ -191,6 +216,14 @@ def getTokenInfo(token_address):
         BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
         mcap = float(price) * int(supply)
+
+        mcap_lp_ratio = int(mcap / LP_Holdings_USD)
+
+        mcap_lp_ratio = '1:' + str(mcap_lp_ratio)
+
+        LP_Holdings_USD = format(int(LP_Holdings_USD), ',') + ' $'
+        LP_Holdings_BNB = ('%.2f' % LP_Holdings_BNB) + ' BNB'
+
         try:
             mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
         except:
@@ -223,6 +256,8 @@ def getTokenInfo(token_address):
                                                                                 "*Market Cap: * " + format(
                     int(mcap_exc_burnt), ',') + ' $ ' +
                        " (≈ " + mcap_in_words + ") " + "\n\n" +
+                       "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" +
+                       "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" + 
                        "*Ownership:* " + str(renounced_stat) + '\n' +
                        "*Burnt tokens:* " + str(burn) + '%' + '\n' +
                        "*Verification status:* CONTRACT " + isVerified + '\n'
@@ -277,6 +312,10 @@ def getInfo(token_address, wallet_address):
         BNB_price = getPrice(contract_address, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
         BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
+        LP_Holdings_USD = getLiquidity(contract_address)
+
+        LP_Holdings_BNB = LP_Holdings_USD / BNB_price
+
         supply_wei = contract.functions.totalSupply().call()
         decimals = pow(10, contract.functions.decimals().call())
 
@@ -284,7 +323,17 @@ def getInfo(token_address, wallet_address):
         supply = supply_wei / decimals
         burn = burntPercentage(token_address, abi=abi, supply=supply)
         mcap = float(price) * int(supply)
-        mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
+        mcap_lp_ratio = int(mcap / LP_Holdings_USD)
+
+        mcap_lp_ratio = '1:' + str(mcap_lp_ratio)
+
+        LP_Holdings_USD = format(int(LP_Holdings_USD), ',') + ' $'
+        LP_Holdings_BNB = ('%.2f' % LP_Holdings_BNB) + ' BNB'
+        try:
+            mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
+        except:
+            mcap_exc_burnt = str(mcap)
+            
         try:
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
             mcap_in_words = 'Around ' + num2words(str(mcap_exc_burnt))[0:mcap_in_words_index]
@@ -305,6 +354,8 @@ def getInfo(token_address, wallet_address):
                       + "*1 BNB:* " + '%.5f' % float(BNB_price) + " " + symbol + "\n\n" \
                       + "*Market Cap:* " + format(int(mcap_exc_burnt), ',') + ' $ ' + \
                       " (≈ " + mcap_in_words + ") " + "\n\n" + \
+                      "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" +\
+                      "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" +\
                       "*Token Balance:* " + format(float(token_balance), ',') + "\n" + \
                       "*Balance $:* " + format(float(balance), ',') + "$" + "\n\n" \
                       + "*Burnt tokens:* " + str(burn) + '%' + "\n\n" + \
@@ -1301,7 +1352,7 @@ def savedata(message):
         repo.create_file(filename, "Reps updated", reps_content)
     except:
         print("save fail")
-        
+
     bot.send_message(1761035007, "BACKUP FILES ARE UPDATED")
     if message != 0:
         bot.reply_to(message, "Done!!")
