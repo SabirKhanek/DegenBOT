@@ -163,7 +163,7 @@ def burntPercentage(token_address, abi, supply):
 
 def getTokenInfo(token_address):
     try:
-
+        print('here')
         isVerified = 'NOT VERIFIED ❌'
         url_bsc = 'https://api.bscscan.com/api'
         contract_address = web3.toChecksumAddress(token_address)
@@ -195,10 +195,13 @@ def getTokenInfo(token_address):
 
         price = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', contract_address)
         BNB_price = getPrice(contract_address, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
+        BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
         LP_Holdings_USD = getLiquidity(contract_address)
+        LP_Holdings_BNB = float(LP_Holdings_USD) / float(BNB_rate)
 
-        LP_Holdings_BNB = LP_Holdings_USD / BNB_price
+        print(BNB_price)
+        print(LP_Holdings_BNB)
 
         supply_wei = contract.functions.totalSupply().call()
 
@@ -210,17 +213,13 @@ def getTokenInfo(token_address):
             renounced_stat = isRenounced(token_address, abi=abi)
         except:
             renounced_stat = 'NULL'
-        print(renounced_stat)
         burn = burntPercentage(token_address, abi=abi, supply=supply)
-        print(burn)
-        BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
         mcap = float(price) * int(supply)
 
         mcap_lp_ratio = int(mcap / LP_Holdings_USD)
 
         mcap_lp_ratio = '1:' + str(mcap_lp_ratio)
-
         LP_Holdings_USD = format(int(LP_Holdings_USD), ',') + ' $'
         LP_Holdings_BNB = ('%.2f' % LP_Holdings_BNB) + ' BNB'
 
@@ -228,8 +227,6 @@ def getTokenInfo(token_address):
             mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
         except:
             mcap_exc_burnt = mcap
-
-        print(mcap_exc_burnt)
 
         try:
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
@@ -244,7 +241,7 @@ def getTokenInfo(token_address):
             supply_in_words = num2words(str(supply))
 
             mcap_exc_burnt = int(mcap_exc_burnt)
-        print('here')
+
         return_text = ("*CA:* " + str(contract_address) + '\n\n'
                                                           "*Token name:* " + name + '\n' +
                        "*1 BNB:* " + '%.2f' % float(BNB_rate) + " $\n" +
@@ -257,7 +254,7 @@ def getTokenInfo(token_address):
                     int(mcap_exc_burnt), ',') + ' $ ' +
                        " (≈ " + mcap_in_words + ") " + "\n\n" +
                        "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" +
-                       "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" + 
+                       "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" +
                        "*Ownership:* " + str(renounced_stat) + '\n' +
                        "*Burnt tokens:* " + str(burn) + '%' + '\n' +
                        "*Verification status:* CONTRACT " + isVerified + '\n'
@@ -313,8 +310,7 @@ def getInfo(token_address, wallet_address):
         BNB_rate = getPrice('0xe9e7cea3dedca5984780bafc599bd69add087d56', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
 
         LP_Holdings_USD = getLiquidity(contract_address)
-
-        LP_Holdings_BNB = LP_Holdings_USD / BNB_price
+        LP_Holdings_BNB = float(LP_Holdings_USD) / float(BNB_rate)
 
         supply_wei = contract.functions.totalSupply().call()
         decimals = pow(10, contract.functions.decimals().call())
@@ -333,7 +329,7 @@ def getInfo(token_address, wallet_address):
             mcap_exc_burnt = str(int(int(mcap) - (float(price) * (float(burn) / 100) * int(supply))))
         except:
             mcap_exc_burnt = str(mcap)
-            
+
         try:
             mcap_in_words_index = num2words(str(mcap_exc_burnt)).index(',')
             mcap_in_words = 'Around ' + num2words(str(mcap_exc_burnt))[0:mcap_in_words_index]
@@ -354,8 +350,8 @@ def getInfo(token_address, wallet_address):
                       + "*1 BNB:* " + '%.5f' % float(BNB_price) + " " + symbol + "\n\n" \
                       + "*Market Cap:* " + format(int(mcap_exc_burnt), ',') + ' $ ' + \
                       " (≈ " + mcap_in_words + ") " + "\n\n" + \
-                      "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" +\
-                      "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" +\
+                      "*LP Holdings: *" + LP_Holdings_BNB + " ( " + LP_Holdings_USD + ")\n" + \
+                      "*MCAP to LP ratio: *" + mcap_lp_ratio + "\n\n" + \
                       "*Token Balance:* " + format(float(token_balance), ',') + "\n" + \
                       "*Balance $:* " + format(float(balance), ',') + "$" + "\n\n" \
                       + "*Burnt tokens:* " + str(burn) + '%' + "\n\n" + \
@@ -522,7 +518,7 @@ for i in main_admin_list:
 
 reps = {'ClaraOrtiz310': 3, 'jonwath': 3, 'CryptoMutt': 1, "MEEVM": 1, "GreenTea1337": 1, "KongMan": 1}
 
-BOT_KEY = "1936324922:AAFY8uWZEgd1Ynh_Mce0pUjZ0oX7FzPU2tM"
+BOT_KEY = "1936324922:AAGqqAHgV8AnQQDScrlnGO6vY0wGjkrS4ts"
 bot = telebot.TeleBot(BOT_KEY)
 
 registered_address = {'sabirdev0': '0x043013E6a9946Ce388b7d61228a101926d911252'}
@@ -1389,14 +1385,14 @@ def default_command(message):
         for i in addresses:
             if isWallet(i):
                 try:
-                    bot.send_chat_action(message.chat.id, 'typing')
+                    bot.send_chat_action(message.chat.id, 'typing', timeout=6)
                     bot.reply_to(message, getPortfolio(i), parse_mode=telegram.ParseMode.MARKDOWN)
                 except:
                     bot.reply_to(message, text='Address: ' + str(i) + ' is not a wallet address')
                     continue
             else:
                 try:
-                    bot.send_chat_action(message.chat.id, 'typing')
+                    bot.send_chat_action(message.chat.id, 'typing', timeout=6)
                     mess_text = getTokenInfo(i)
                 except:
                     bot.reply_to(message, text='Address: ' + str(i) + ' is not a wallet address')
