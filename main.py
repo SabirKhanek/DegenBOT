@@ -1371,7 +1371,6 @@ def default_command(message):
             if len(address) < 42:
                 raise
             if not Web3.isAddress(address):
-                bot.reply_to(message, text='Address: ' + str(address) + ' is not a wallet address')
                 raise
             addresses.append(address)
         except:
