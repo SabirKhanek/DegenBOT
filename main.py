@@ -573,21 +573,28 @@ class myBool:
 
 individual_vote_flag = myBool()
 
+
+BOT_KEY = "1936324922:AAHagrue5eHBV-LHIQ2Q8YgoWYx9tlgDguw"
+bot = telebot.TeleBot(BOT_KEY)
+
 GITHUB_ACCESS = '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'
 git = Github(GITHUB_ACCESS)
 repo = git.get_user().get_repo('DegenBOTbackupfiles')
 
 disallowed_user_list = []
-bot_admin_list = ["sabirdev0", "jonwath", "KongMan", "CryptoMUTT", "ReverseWojack", "donmonke0"]
+bot_admin_list = ["ReverseWojack"]
 main_admin_list = ["sabirdev0", "jonwath", "KongMan", "donmonke0", "CryptoMUTT", "ReverseWojack"]
+admins = bot.get_chat_administrators(-1001480482593)
+
+for i in admins:
+    bot_admin_list.append(i.user.username)
+    
 voter_list = {}
-for i in main_admin_list:
+for i in bot_admin_list:
     voter_list[i] = Voter(i)
 
 reps = {'ClaraOrtiz310': 3, 'jonwath': 3, 'CryptoMutt': 1, "MEEVM": 1, "GreenTea1337": 1, "KongMan": 1}
 
-BOT_KEY = "1936324922:AAHagrue5eHBV-LHIQ2Q8YgoWYx9tlgDguw"
-bot = telebot.TeleBot(BOT_KEY)
 
 registered_address = {'sabirdev0': '0x043013E6a9946Ce388b7d61228a101926d911252'}
 
@@ -1436,7 +1443,7 @@ def savedata(message):
         except:
             l = 0
         announced_content = json.dumps(announced)
-        repo.create_file(filename, "announce file updated", announced_content)
+        repo.create_file(filename, "Reps updated", announced_content)
     except:
         print("save fail")
 
