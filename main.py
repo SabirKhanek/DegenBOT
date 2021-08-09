@@ -262,9 +262,24 @@ def getTokenInfo(token_address):
 
         print(return_text)
         return return_text
+    
     except Exception as e:
         print(e)
-        return "Contract address: " + str(token_address) + " is not supported"
+        try:
+            contract_address = web3.toChecksumAddress(token_address)
+            contract = getContract(contract_address)
+            name = contract.functions.name().call()
+            symbol = contract.functions.symbol().call()
+            supply_wei = contract.functions.totalSupply().call()
+            decimals = pow(10, contract.functions.decimals().call())
+            supply = supply_wei / decimals
+
+            mess_text = ("*Token name:* " + name + "\n*Symbol:* " + symbol +
+                         "\n*Supply: *" + supply + "\n\n*Price and other information cannot be"
+                         " fetched now because it's probably not launched yet. Check another time...*")
+            return mess_text
+        except:
+            return "Contract address: " + str(token_address) + " is not supported"
 
 
 def getInfo(token_address, wallet_address):
@@ -358,8 +373,24 @@ def getInfo(token_address, wallet_address):
                       "*Verification status: CONTRACT " + str(isVerified) + "*" + '\n'
 
         return return_text
-    except:
-        return 'Whoops! can\'t fetch data of this token... Kindly check contract address...'
+    
+    except Exception as e:
+        print(e)
+        try:
+            contract_address = web3.toChecksumAddress(token_address)
+            contract = getContract(contract_address)
+            name = contract.functions.name().call()
+            symbol = contract.functions.symbol().call()
+            supply_wei = contract.functions.totalSupply().call()
+            decimals = pow(10, contract.functions.decimals().call())
+            supply = supply_wei / decimals
+
+            mess_text = ("*Token name:* " + name + "\n*Symbol:* " + symbol +
+                         "\n*Supply: *" + supply + "\n\n*Price and other information cannot be"
+                         " fetched now because it's probably not launched yet. Check another time...*")
+            return mess_text
+        except:
+            return 'Whoops! can\'t fetch data of this token... Kindly check contract address...'
 
 
 def getSymbol(token_address):
