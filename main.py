@@ -63,6 +63,41 @@ def decToAmount(address, amount):
     return amount / pow(10, decimals)
 
 
+def isTxn(txn_hash):
+    try:
+        web3.eth.getTransaction(txn_hash)
+        return True
+    except:
+        return False
+
+
+def getTxn(txn_hash):
+    try:
+        PancakeSwap = '0x10ED43C718714eb63d5aA57B78B54704E256024E'
+        txn = web3.eth.getTransaction(txn_hash)
+        print(txn)
+        txn_hash = "Transaction Hash: " + txn_hash + "\n\n"
+        from_address = "From: " + str(txn.get('from')) + "\n"
+        interacted_with = "To: " + str(txn.get('to')) + "\n\n"
+        if str(txn.get('to')) == PancakeSwap:
+            interacted_with = 'Interacted with: PancakeSwap: Router v2' + "\n\n"
+        if str(txn.get('to')) == 'None':
+            interacted_with = 'Interacted with: None (It means that a contract may be created or something else.)' + \
+                              "\n\n "
+        gas = "Gas: " + str(txn.get('gas')) + " WEI" + "\n"
+        gasPrice = "Gas Price: " + str(txn.get('gasPrice')) + " (" + str(
+            web3.fromWei(txn.get('gasPrice'), 'gwei')) + ' GWEI)' + "\n"
+        txn_fee = "Transaction Fee: " + str(web3.fromWei(txn.get('gas') * txn.get('gasPrice'), 'ether')) + ' BNB' + "\n"
+        value = "Value: " + str(txn.get('value')) + "\n\n"
+        transactioncount = "Transaction count: " + str(txn.get('transactionIndex')) + "\n"
+        block_number = "Block Number: " + str(txn.get('blockNumber')) + "\n\n"
+        mess_text = txn_hash + block_number + from_address +\
+                    interacted_with + gas + gasPrice + txn_fee + value + transactioncount
+        return mess_text
+    except:
+        return
+
+
 def getPancake(address):
     token_address = web3.toChecksumAddress(address)
     API_ENDPOINT = 'https://api.pancakeswap.info/api/v2/tokens/' + token_address
@@ -262,7 +297,7 @@ def getTokenInfo(token_address):
 
         print(return_text)
         return return_text
-    
+
     except Exception as e:
         print(e)
         try:
@@ -276,7 +311,8 @@ def getTokenInfo(token_address):
 
             mess_text = ("*Token name:* " + name + "\n*Symbol:* " + symbol +
                          "\n*Supply: *" + supply + "\n\n*Price and other information cannot be"
-                         " fetched now because it's probably not launched yet. Check another time...*")
+                                                   "fetched now because it's probably not launched yet. Check another "
+                                                   "time...*")
             return mess_text
         except:
             return "Contract address: " + str(token_address) + " is not supported"
@@ -373,7 +409,7 @@ def getInfo(token_address, wallet_address):
                       "*Verification status: CONTRACT " + str(isVerified) + "*" + '\n'
 
         return return_text
-    
+
     except Exception as e:
         print(e)
         try:
@@ -387,7 +423,8 @@ def getInfo(token_address, wallet_address):
 
             mess_text = ("*Token name:* " + name + "\n*Symbol:* " + symbol +
                          "\n*Supply: *" + supply + "\n\n*Price and other information cannot be"
-                         " fetched now because it's probably not launched yet. Check another time...*")
+                                                   "fetched now because it's probably not launched yet. Check another "
+                                                   "time...*")
             return mess_text
         except:
             return 'Whoops! can\'t fetch data of this token... Kindly check contract address...'
@@ -549,7 +586,7 @@ for i in main_admin_list:
 
 reps = {'ClaraOrtiz310': 3, 'jonwath': 3, 'CryptoMutt': 1, "MEEVM": 1, "GreenTea1337": 1, "KongMan": 1}
 
-BOT_KEY = "1936324922:AAGqqAHgV8AnQQDScrlnGO6vY0wGjkrS4ts"
+BOT_KEY = "1849791064:AAH-vo2noAzOdqCqiCAoQ3X5ZBdwXJfzYQU"
 bot = telebot.TeleBot(BOT_KEY)
 
 registered_address = {'sabirdev0': '0x043013E6a9946Ce388b7d61228a101926d911252'}
@@ -564,6 +601,8 @@ registered_tokens = {'BUSD': '0xe9e7cea3dedca5984780bafc599bd69add087d56',
                      'JIRO': '0x984ae7a0e32ae2813831b3d082650e1eca7a1996',
                      'USDC': '0xBA5Fe23f8a3a24BEd3236F05F2FcF35fd0BF0B5C'
                      }
+
+announced = []
 
 price_exceptions = ['BUSD', 'ETH', 'XRP', 'USDT', 'ADA', 'USDC']
 
@@ -599,6 +638,14 @@ if restore:
         reps = json.loads(reps_file.decoded_content.decode())
     except Exception as e:
         bot.send_message(1761035007, "Reps are not restored : " + str(e))
+        print('reps.pkl not found')
+
+    try:
+        filename = "announced.json"
+        announced_file = repo.get_contents(filename)
+        announced = json.loads(announced_file.decoded_content.decode())
+    except Exception as e:
+        bot.send_message(1761035007, "Announced are not restored : " + str(e))
         print('reps.pkl not found')
 
     bot.send_message(1761035007, "Bot is restarted and data is restored")
@@ -682,7 +729,9 @@ def help(message):
 
 @bot.message_handler(commands=['greet'])
 def greet(message):
-    bot.reply_to(message, "Hey! @" + message.from_user.username + " Subscribe to this channel: https://t.me/DegenDefiAnnouncementChannel")
+    bot.reply_to(message,
+                 "Hey! @" + message.from_user.username + "Subscribe to this channel: "
+                                                         "https://t.me/DegenDefiAnnouncementChannel")
 
 
 @bot.message_handler(commands=['announce'])
@@ -1379,6 +1428,15 @@ def savedata(message):
     except:
         print("save fail")
 
+    try:
+        filename = 'announced.json'
+        contents_to_delete = repo.get_contents(filename)
+        repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
+        announced_content = json.dumps(announced)
+        repo.create_file(filename, "Reps updated", announced_content)
+    except:
+        print("save fail")
+
     bot.send_message(1761035007, "BACKUP FILES ARE UPDATED")
     if message != 0:
         bot.reply_to(message, "Done!!")
@@ -1394,16 +1452,22 @@ def default_command(message):
     message_text = str(message.text)
     message_words = message_text.split()
     addresses = []
+    txns = []
 
     for f in message_words:
         try:
             index = f.index('0x')
             address = f[index: index + 42]
+            check = False
+            if isTxn(f[index: index + 66]) == True:
+                txns.append(f[index: index + 66])
+                check = True
             if len(address) < 42:
                 raise
             if not Web3.isAddress(address):
                 raise
-            addresses.append(address)
+            if check == False:
+                addresses.append(address)
         except:
             if f.upper() in registered_tokens.keys() and not f.upper() in price_exceptions:
                 address = registered_tokens.get(f.upper())
@@ -1417,14 +1481,12 @@ def default_command(message):
                     bot.send_chat_action(message.chat.id, 'typing', timeout=6)
                     bot.reply_to(message, getPortfolio(i), parse_mode=telegram.ParseMode.MARKDOWN)
                 except:
-                    bot.reply_to(message, text='Address: ' + str(i) + ' is not a wallet address')
                     continue
             else:
                 try:
                     bot.send_chat_action(message.chat.id, 'typing', timeout=6)
                     mess_text = getTokenInfo(i)
                 except:
-                    bot.reply_to(message, text='Address: ' + str(i) + ' is not a wallet address')
                     continue
 
                 if mess_text.startswith('Contract address: '):
@@ -1442,6 +1504,27 @@ def default_command(message):
                 click_kb.row(pancake_bt)
                 bot.send_message(chat_id=chat_id, reply_to_message_id=message_id, text=mess_text, reply_markup=click_kb,
                                  parse_mode=telegram.ParseMode.MARKDOWN)
+                if web3.toChecksumAddress(
+                        i) not in announced and message.from_user.username not in disallowed_user_list:
+                    mess_text = mess_text + "\n\n___SENT BY @" + message.from_user.username + " in Degen Defi Group___"
+                    bot.send_message(-1001591163735, text=mess_text, reply_markup=click_kb,
+                                     parse_mode=telegram.ParseMode.MARKDOWN)
+                    announced.append(web3.toChecksumAddress(i))
+                    savedata(message=0)
+
+    if len(txns) > 0:
+        bot.send_chat_action(message.chat.id, 'typing', timeout=6)
+        for i in txns:
+            try:
+                mess_text = getTxn(i)
+                bscscan_url = "https://bscscan.com/tx/" + i
+                bsc_bt = types.InlineKeyboardButton(text='BSCScan 🔍', url=bscscan_url)
+                click_kb = types.InlineKeyboardMarkup()
+                click_kb.row(bsc_bt)
+                bot.send_message(chat_id=chat_id, reply_to_message_id=message_id, text=mess_text, reply_markup=click_kb,
+                                 parse_mode=telegram.ParseMode.MARKDOWN)
+            except:
+                continue
 
 
 while True:
