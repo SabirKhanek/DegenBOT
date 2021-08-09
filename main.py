@@ -602,8 +602,6 @@ registered_tokens = {'BUSD': '0xe9e7cea3dedca5984780bafc599bd69add087d56',
                      'USDC': '0xBA5Fe23f8a3a24BEd3236F05F2FcF35fd0BF0B5C'
                      }
 
-announced = []
-
 price_exceptions = ['BUSD', 'ETH', 'XRP', 'USDT', 'ADA', 'USDC']
 
 bsc_test = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
@@ -613,6 +611,8 @@ web3 = Web3(Web3.HTTPProvider(bsc_main))
 
 if web3.isConnected():
     print('Connected to mainnet...')
+
+announced = [web3.toChecksumAddress('0x984ae7a0e32ae2813831b3d082650e1eca7a1996'), web3.toChecksumAddress('0x7C0C510F83D83956051DeB399577d404C190A006')]
 
 restore = True
 if restore:
@@ -1430,10 +1430,13 @@ def savedata(message):
 
     try:
         filename = 'announced.json'
-        contents_to_delete = repo.get_contents(filename)
-        repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
+        try:
+            contents_to_delete = repo.get_contents(filename)
+            repo.delete_file(contents_to_delete.path, "Remove to create updated", contents_to_delete.sha)
+        except:
+            l = 0
         announced_content = json.dumps(announced)
-        repo.create_file(filename, "Reps updated", announced_content)
+        repo.create_file(filename, "announce file updated", announced_content)
     except:
         print("save fail")
 
@@ -1510,6 +1513,7 @@ def default_command(message):
                     bot.send_message(-1001591163735, text=mess_text, reply_markup=click_kb,
                                      parse_mode=telegram.ParseMode.MARKDOWN)
                     announced.append(web3.toChecksumAddress(i))
+                    print(announced)
                     savedata(message=0)
 
     if len(txns) > 0:
