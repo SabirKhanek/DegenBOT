@@ -8,6 +8,7 @@ import pickle
 import requests
 from github import Github
 from num2words import num2words
+import check_eth
 
 
 class obj(object):
@@ -88,7 +89,7 @@ def getTxn(txn_hash):
         gasPrice = "Gas Price: " + str(txn.get('gasPrice')) + " (" + str(
             web3.fromWei(txn.get('gasPrice'), 'gwei')) + ' GWEI)' + "\n"
         txn_fee = "Transaction Fee: " + str(web3.fromWei(txn.get('gas') * txn.get('gasPrice'), 'ether')) + ' BNB' + "\n"
-        value = "Value: " + str(web3.fromWei(txn.get('value'), 'ether')) + ' BNB' + "\n\n"
+        value = "Value: " + str(txn.get('value')) + "\n\n"
         transactioncount = "Transaction count: " + str(txn.get('transactionIndex')) + "\n"
         block_number = "Block Number: " + str(txn.get('blockNumber')) + "\n\n"
         mess_text = txn_hash + block_number + from_address +\
@@ -581,6 +582,8 @@ GITHUB_ACCESS = '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'
 git = Github(GITHUB_ACCESS)
 repo = git.get_user().get_repo('DegenBOTbackupfiles')
 
+bridged = {"MUNCH" : "0x944eeE930933BE5E23b690c8589021Ec8619a301"}
+
 disallowed_user_list = []
 bot_admin_list = ["ReverseWojack"]
 main_admin_list = ["sabirdev0", "jonwath", "KongMan", "donmonke0", "CryptoMUTT", "ReverseWojack"]
@@ -588,7 +591,7 @@ admins = bot.get_chat_administrators(-1001480482593)
 
 for i in admins:
     bot_admin_list.append(i.user.username)
-    
+
 voter_list = {}
 for i in bot_admin_list:
     voter_list[i] = Voter(i)
@@ -613,6 +616,10 @@ price_exceptions = ['BUSD', 'ETH', 'XRP', 'USDT', 'ADA', 'USDC']
 
 bsc_test = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
 bsc_main = 'https://bsc-dataseed.binance.org/'
+
+eth_main = 'https://mainnet.infura.io/v3/a47f1736f9dc45208e657cfb08cd9f77'
+
+web3_eth = Web3(Web3.HTTPProvider(eth_main))
 
 web3 = Web3(Web3.HTTPProvider(bsc_main))
 
@@ -1407,6 +1414,16 @@ def getbalance(message):
                                   "/getbalance {TokenAddress/Symbol} {Wallet Address} if you don't want to register")
 
 
+@bot.message_handler(commands=['addbridge'])
+def addbridge(message):
+    if message.from_user.username in main_admin_list:
+        address = message.text.split()[1]
+        symbol = check_eth.getName(address)
+        bridged[symbol] = address
+        bot.reply_to(message, symbol+" has been added to the bridged addresses")
+
+
+
 @bot.message_handler(commands=['savedata'])
 def savedata(message):
     try:
@@ -1463,6 +1480,7 @@ def default_command(message):
     message_words = message_text.split()
     addresses = []
     txns = []
+    bridge_check = []
 
     for f in message_words:
         try:
@@ -1482,6 +1500,8 @@ def default_command(message):
             if f.upper() in registered_tokens.keys() and not f.upper() in price_exceptions:
                 address = registered_tokens.get(f.upper())
                 addresses.append(address)
+            if f.upper() in bridged.keys():
+                bridge_check.append(bridged.get(f.upper()))
             continue
 
     if len(addresses) > 0:
@@ -1522,6 +1542,17 @@ def default_command(message):
                     announced.append(web3.toChecksumAddress(i))
                     print(announced)
                     savedata(message=0)
+
+    if len(bridge_check) > 0:
+        for i in bridge_check:
+            mess_text = check_eth.getTokenInfo(i)
+            uniswap_link = 'https://app.uniswap.org/#/swap?use=V2&inputCurrency='
+            uniswap_link = uniswap_link + i
+            uniswap_btn = types.InlineKeyboardButton(text='UniSwap 🦄', url=uniswap_link)
+            click_kb = types.InlineKeyboardMarkup()
+            click_kb.row(uniswap_btn)
+            bot.send_message(chat_id=chat_id, reply_to_message_id=message_id, text=mess_text, reply_markup=click_kb,
+                             parse_mode=telegram.ParseMode.MARKDOWN)
 
     if len(txns) > 0:
         bot.send_chat_action(message.chat.id, 'typing', timeout=6)
