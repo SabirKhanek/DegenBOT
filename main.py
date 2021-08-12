@@ -1168,10 +1168,7 @@ def removeregtoken(message):
 def donate(message):
     bot.send_chat_action(message.chat.id, 'typing')
     time.sleep(2)
-    bot.reply_to(message, "My father worked really hard while coding me..."
-                          " So if you like my work and want to appreciate it and show your support; Donate!\n\n"
-                          "BSC: 0x497089B11903B5946f41C700c9479A13DFf5BB23\n\n"
-                          "Always nice to see my work is appreciated :)")
+    bot.reply_to(message, "We don't need any donation...")
 
 
 @bot.message_handler(commands=['getbalance'])
