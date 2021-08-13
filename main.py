@@ -1494,12 +1494,14 @@ def default_command(message):
             if check == False:
                 addresses.append(address)
         except:
-            if f.upper() in registered_tokens.keys() and not f.upper() in price_exceptions:
-                address = registered_tokens.get(f.upper())
-                addresses.append(address)
-            if f.upper() in bridged.keys():
-                bridge_check.append(bridged.get(f.upper()))
-            continue
+            if f.startswith('/'):
+                f = f[1:]
+                if f.upper() in registered_tokens.keys() and not f.upper() in price_exceptions:
+                    address = registered_tokens.get(f.upper())
+                    addresses.append(address)
+                if f.upper() in bridged.keys():
+                    bridge_check.append(bridged.get(f.upper()))
+                continue
 
     if len(addresses) > 0:
         for i in addresses:
