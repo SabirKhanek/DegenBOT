@@ -89,7 +89,7 @@ def getTxn(txn_hash):
         gasPrice = "Gas Price: " + str(txn.get('gasPrice')) + " (" + str(
             web3.fromWei(txn.get('gasPrice'), 'gwei')) + ' GWEI)' + "\n"
         txn_fee = "Transaction Fee: " + str(web3.fromWei(txn.get('gas') * txn.get('gasPrice'), 'ether')) + ' BNB' + "\n"
-        value = "Value: " + str(txn.get('value')) + "\n\n"
+        value = "Value: " + str(web3.fromWei(txn.get('value'), 'ether')) + " BNB\n\n"
         transactioncount = "Transaction count: " + str(txn.get('transactionIndex')) + "\n"
         block_number = "Block Number: " + str(txn.get('blockNumber')) + "\n\n"
         mess_text = txn_hash + block_number + from_address +\
