@@ -575,10 +575,10 @@ class myBool:
 individual_vote_flag = myBool()
 
 
-BOT_KEY = "1936324922:AAHagrue5eHBV-LHIQ2Q8YgoWYx9tlgDguw"
+BOT_KEY = "" # replace with your BOT API KEY
 bot = telebot.TeleBot(BOT_KEY)
 
-GITHUB_ACCESS = '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'
+GITHUB_ACCESS = '' # replace with your GITHUB ACCESS key
 git = Github(GITHUB_ACCESS)
 repo = git.get_user().get_repo('DegenBOTbackupfiles')
 
